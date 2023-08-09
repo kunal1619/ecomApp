@@ -1,16 +1,15 @@
 import React from 'react'
 import Navbar from '../features/Navbar/Navbar'
-import ProductList from '../features/productList/components/ProductList'
+import MyOrder from '../features/user/components/MyOrder'
 
-
-const Home = () => {
+const MyorderPage = () => {
   return (
     <div>
       <Navbar>
-        <ProductList/>
+        <MyOrder/>
       </Navbar>
     </div>
   )
 }
 
-export default Home
+export default MyorderPage

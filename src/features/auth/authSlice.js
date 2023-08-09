@@ -1,23 +1,42 @@
 import { createAsyncThunk, createSlice} from "@reduxjs/toolkit"
-import { fetchUser } from "./authApi"
+import {  createNewUser, fetchLoginUser, logOutUser } from "./authApi"
 
 
 const initialState = {
-  value: 0,
   status: "idle",
+  logedInUserData : null,
+  loginData : null
 }
 
 
-export const incrementAsync = createAsyncThunk(
-  "counter/fetchUser",
-  async (amount) => {
-    const response = await fetchUser(amount)
+export const signUpUserInfoAsync = createAsyncThunk(
+  "user/createNewUser",
+  async (userInfo) => {
+    const response = await createNewUser(userInfo)
     return response.data
   },
 )
 
+export const loginUserAsync = createAsyncThunk(
+  "user/fetchLoginUser",
+  async (userInfo) => {
+    const response = await fetchLoginUser(userInfo)
+    return response.data
+  },
+)
+
+export const logOutUserAsync = createAsyncThunk(
+  "user/logOutUser",
+  async (userId) => {
+    const response = await logOutUser(userId)
+    return response.data
+  },
+)
+
+
+
 export const counterSlice = createSlice({
-  name: "counter",
+  name: "user",
   initialState,
 
   reducers: {
@@ -30,22 +49,52 @@ export const counterSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      .addCase(incrementAsync.pending, (state) => {
+    //sign up
+      .addCase(signUpUserInfoAsync.pending, (state) => {
         state.status = "loading"
       })
-      .addCase(incrementAsync.fulfilled, (state, action) => {
+      .addCase(signUpUserInfoAsync.fulfilled, (state, action) => {
         state.status = "idle"
-        state.value += action.payload
+        state.logedInUserData = action.payload
       })
-      .addCase(incrementAsync.rejected, (state) => {
+      .addCase(signUpUserInfoAsync.rejected, (state) => {
         state.status = "failed"
       })
+
+      //login
+      .addCase(loginUserAsync.pending, (state) => {
+        state.status = "loading"
+      })
+      .addCase(loginUserAsync.fulfilled, (state, action) => {
+        state.status = "idle"
+        state.loginData = action.payload
+      })
+      .addCase(loginUserAsync.rejected, (state) => {
+        state.status = "failed"
+      })
+
+
+      //logout
+      .addCase(logOutUserAsync.pending, (state) => {
+        state.status = "loading"
+      })
+      .addCase(logOutUserAsync.fulfilled, (state, action) => {
+        state.status = "idle"
+        state.loginData = null
+      })
+      .addCase(logOutUserAsync.rejected, (state) => {
+        state.status = "failed"
+      })
+
+      
   },
 })
 
 export const { increment } = counterSlice.actions
 
-export const selectCount = (state) => state.counter.value;
-
+export const selectCreatedUser = (state) => state.auth.logedInUserData;
+                                                  //auth sotore se aa rha hai
+export const selectLogedInUser = (state) => state.auth.loginData
+export const loader = (state) => state.auth.status
 
 export default counterSlice.reducer;
