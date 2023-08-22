@@ -1,21 +1,18 @@
 import React from 'react'
-import { useSelector } from 'react-redux'
-import { selectCreatedUser } from './authSlice'
 import { Navigate } from 'react-router-dom'
-import { selectLogedInUser } from './authSlice'
-
 
 
 const ProtectedAdmin = ({children}) => {
-    const user = useSelector(selectCreatedUser)
-    const loginUser = useSelector(selectLogedInUser)
+   
+    const loginData = localStorage.getItem('loginData')
+    const loginDataObj = JSON.parse(loginData);
 
 
-    if(!user && !loginUser){
+    if(!loginDataObj.token){
       return <Navigate to='/login' replace={true}/>
     }
 
-    if(user  && user.domain !== 'admin'){
+    if(loginDataObj  && loginDataObj.role !== 'admin'){
       return <Navigate to='/' replace={true}/>
     }
   

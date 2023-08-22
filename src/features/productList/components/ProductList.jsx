@@ -6,7 +6,7 @@ import { Fragment } from "react"
 import { ChevronLeftIcon, ChevronRightIcon, StarIcon } from '@heroicons/react/20/solid'
 import { Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
-import { fetchAllProductsAsync, fetchPageNumberDataAsync, fetchProductByFilterAsync, fetchSortedProductAsync, selectAllProducts } from "../ProductSlice"
+import { fetchAllProductsAsync, fetchPageNumberDataAsync, fetchProductByFilterAsync, selectAllProducts } from "../ProductSlice"
 import { LIMIT_PAGEDATA } from "../../../app/constant"
 
 const sortOptions = [
@@ -16,18 +16,6 @@ const sortOptions = [
 ]
 //"men's clothing", 'jewelery', 'electronics', "women's clothing"
 const filters = [
-  {
-    id: 'color',
-    name: 'Color',
-    options: [
-      { value: 'white', label: 'White', checked: false },
-      { value: 'beige', label: 'Beige', checked: false },
-      { value: 'blue', label: 'Blue', checked: true },
-      { value: 'brown', label: 'Brown', checked: false },
-      { value: 'green', label: 'Green', checked: false },
-      { value: 'purple', label: 'Purple', checked: false },
-    ],
-  },
   {
     id: 'category',
     name: 'Category',
@@ -71,25 +59,10 @@ const filters = [
      
       {value: 'lighting', label: 'lighting', checked: false}],
   },
-  {
-    id: 'size',
-    name: 'Size',
-    options: [
-      { value: '2l', label: '2L', checked: false },
-      { value: '6l', label: '6L', checked: false },
-      { value: '12l', label: '12L', checked: false },
-      { value: '18l', label: '18L', checked: false },
-      { value: '20l', label: '20L', checked: false },
-      { value: '40l', label: '40L', checked: true },
-    ],
-  },
+ 
 ]
 
-const items = [
-  { id: 1, title: 'Back End Developer', department: 'Engineering', type: 'Full-time', location: 'Remote' },
-  { id: 2, title: 'Front End Developer', department: 'Engineering', type: 'Full-time', location: 'Remote' },
-  { id: 3, title: 'User Interface Designer', department: 'Design', type: 'Full-time', location: 'Remote' },
-]
+
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -101,34 +74,51 @@ function classNames(...classes) {
 const productsList = useSelector(selectAllProducts)
 const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-
 const dispatch = useDispatch();
-  
+
 const [filterByNames, setFilterByNames] = useState([])
+const [filtered, setFiltered] = useState()
+const [sortBy, setSortBy] = useState(1)
+
+for (const filter of filters) {
+  if (filter.id === 'category') {
+    for (const option of filter.options) {
+      if (filtered && filtered.category.includes(option.value)) {
+        option.checked = true;
+      }
+    }
+  }
+}
+
+
 
 const handleFilter = (e, section, option)=>{
   if(e.target.checked){
     let filteredBy = []
     filteredBy.push(option.value)
     setFilterByNames([...filterByNames,...filteredBy])
-    const filterData = { [section.id] : [...filterByNames, option.value]}
-  dispatch(fetchProductByFilterAsync(filterData))
+    const filterData = { [section.id] : [...filterByNames, option.value], sortby : sortBy}
+    setFiltered(filterData)
+    dispatch(fetchProductByFilterAsync(filterData))
   }else{
     setFilterByNames(filterByNames.filter((cat)=> cat !== option.value))
   }
   
 }
 
-
 const handleSort = (sortName)=>{
   if(sortName === 'Price: Low to High'){
-    dispatch(fetchSortedProductAsync('asc'))
+    setSortBy(1)
+    dispatch(fetchProductByFilterAsync({...filtered, sortby : 1}))
   }else if(sortName === 'Price: High to Low'){
-    dispatch(fetchSortedProductAsync('desc')) 
+    setSortBy(-1)
+    dispatch(fetchProductByFilterAsync({...filtered, sortby : -1}))
   }
-  
 }
 
+useEffect(()=>{
+  dispatch(fetchAllProductsAsync())
+},[])
 
   return (
 
@@ -140,12 +130,12 @@ const handleSort = (sortName)=>{
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
        <DesktopFiltered handleSort={handleSort} setMobileFiltersOpen={setMobileFiltersOpen}/>
           {/* product grid start */}
-         <Products productsList={productsList} handleFilter={handleFilter} />
+         <Products productsList={productsList} handleFilter={handleFilter} sortBy={sortBy}/>
 
         {/* product grid end */}
 
         {/* pagination start */}
-       <Pagination dispatch={dispatch} handleSort={handleSort}/>
+       {/* <Pagination dispatch={dispatch} handleSort={handleSort}/> */}
 
       </main>
     </div>
@@ -335,89 +325,36 @@ const  DesktopFiltered= ({handleSort, setMobileFiltersOpen}) => {
 
 
 
-const  Pagination= ({totalItem = 30, dispatch, handleSort}) => {
-
-let NumToArray = Array.from({length: Math.ceil(totalItem / LIMIT_PAGEDATA)});
-
-const [pageNumber, setPageNumber] = useState(1)
-
-const handlePage=(num)=>{
-  if(num === undefined){num = pageNumber}
-setPageNumber(num)
-dispatch(fetchPageNumberDataAsync({pageData : [num, LIMIT_PAGEDATA]}))
-}
-
-useEffect(()=>{
-  handlePage();
-},[])
-
-  return (
-    <div>
-              <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-      <div className="flex flex-1 justify-between sm:hidden">
-        <div
-          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          
-        >
-          Previous
-        </div>
-        <div
-          
-          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          onClick={()=>handlePage(pageNumber+1)}
-        >
-          Next
-        </div>
-      </div>
-      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-gray-700">
-            Showing <span className="font-medium">{pageNumber}</span> to <span className="font-medium">{Math.ceil(totalItem/LIMIT_PAGEDATA)}</span> of{' '}
-            <span className="font-medium">{totalItem}</span> results
-          </p>
-        </div>
-        <div>
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-            <div
-              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-              onClick={()=>handlePage(pageNumber>1 ? pageNumber-1 : 1)}
-            >
-              <span className="sr-only">Previous</span>
-              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
-            </div>
-            {/* Current: "z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600", Default: "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0" */}
-
-            {NumToArray.map((elm, ind)=>(
-              <li
-              key={ind}
-              aria-current="page"
-              className={`relative z-10 inline-flex items-center ${pageNumber === ind+1 ? "bg-blue-600 text-white" : "bg-white text-blue-600"}  cursor-pointer px-4 py-2 text-sm font-semibold text-blue-600 focus:text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600`}
-              onClick={()=>handlePage(ind+1)}>
-              {ind+1}
-            </li>
-
-            ))}
-    
-            
-
-            <div
-              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-              onClick={()=>handlePage(pageNumber<6 ? pageNumber+1 : 6)}
-            >
-              <span className="sr-only">Next</span>
-              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
-            </div>
-          </nav>
-        </div>
-      </div>
-    </div>
-    </div>
-  )
-}
-
-
-
 const  Products = ({productsList, handleFilter}) => {
+  
+  const pageSize = 5; // Number of objects per page
+  const numberOfTabs = Math.ceil(productsList.length / pageSize)
+  
+  const array = [];
+  for(let i = 0; i<numberOfTabs; i++){
+    array.push(i+1)
+  }
+
+  // Function to get paginated data based on page number
+  const getPaginatedData = (pageNumber) => {
+    const startIndex = (pageNumber - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return productsList.slice(startIndex, endIndex);
+  };
+  
+  // Example usage
+
+  const [pageNumber, setPageNumber] = useState(1)
+  
+  const paginatedData = getPaginatedData(pageNumber)
+
+  const handlePagination = (pageNum)=>{
+     setPageNumber(pageNum)
+  }
+
+ 
+
+
   return (
     <div>
               <section aria-labelledby="products-heading" className="pb-24 pt-6">
@@ -483,9 +420,9 @@ const  Products = ({productsList, handleFilter}) => {
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
       
       <div className=" grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-        {productsList.map((product) => {
+        {paginatedData && paginatedData.map((product) => {
           if(!product.delete){
-            return   <Link to={`/productdetail/${product.id}`} key={product.id}>
+            return   <Link to={`/productdetail/${product._id}`} key={product._id}>
           <div  className="group relative" >
             <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-80">
               <img
@@ -520,6 +457,52 @@ const  Products = ({productsList, handleFilter}) => {
             </div>
           </div>
         </section>
+
+      {/* pagination */}
+
+      <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <div className="flex flex-1 justify-between sm:hidden">
+        <div onClick={()=>{pageNumber<6 ? setPageNumber(pageNumber + 1) : setPageNumber(6)}}
+          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+        >
+          Previous
+        </div>
+        <div onClick={()=>{pageNumber>1 ? setPageNumber(pageNumber - 1) : setPageNumber(1)}}
+          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+        >
+          Next
+        </div>
+      </div>
+      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{' '}
+            <span className="font-medium">97</span> results
+          </p>
+        </div>
+        <div>
+          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <div  onClick={()=>{pageNumber>1 ? setPageNumber(pageNumber - 1) : setPageNumber(1)}}
+              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 cursor-pointer">
+              <span className="sr-only">Previous</span>
+              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+            </div>
+            {array.map((num)=>(
+              <div aria-current="page" key={num} onClick={()=>handlePagination(num)}
+              className={`cursor-pointer relative z-10 inline-flex items-center ${pageNumber === num ? "bg-indigo-600 text-white" : "bg-white"}  hover:bg-indigo-600 hover:text-white text-gray-700 px-4 py-2 text-sm font-semibold focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600`}>
+              {num}
+            </div>
+            ))}
+           
+
+            <div onClick={()=>{pageNumber<6 ? setPageNumber(pageNumber + 1) : setPageNumber(6)}}  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 cursor-pointer">
+              <span className="sr-only">Next</span>
+              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+            </div>
+          </nav>
+        </div>
+      </div>
+    </div>
     </div>
   )
 }

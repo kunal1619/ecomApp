@@ -7,8 +7,7 @@ const AdminProductListPage = () => {
     <div>
     <Navbar>
     <AdminProductList/>
-    </Navbar>
-      
+    </Navbar> 
     </div>
   )
 }

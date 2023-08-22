@@ -20,6 +20,13 @@ export function Login() {
 
   };
 
+  if(loginData){
+    localStorage.setItem('token', loginData.token);
+    const jsonLoginData = JSON.stringify(loginData);
+    localStorage.setItem('loginData', jsonLoginData);
+  }
+
+
 
   return (
    <>

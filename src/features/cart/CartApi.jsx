@@ -1,6 +1,7 @@
 export function fetchUserCart(cartDataWithUserId){
+    
     return new Promise(async (resolve)=>{
-        const response = await fetch('https://dummyjson.com/carts/add', {
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/addtocart`, {
 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -17,8 +18,9 @@ export function fetchUserCart(cartDataWithUserId){
 //fetch user cart items
 
 export function fetchUserCartTotalItems(userId){
+
     return new Promise(async (resolve)=>{
-        const response = await fetch(`https://dummyjson.com/carts/user/${userId}`)
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/cart/${userId.userId}`)
         const data = await response.json()
         resolve({data})
     })
@@ -26,19 +28,17 @@ export function fetchUserCartTotalItems(userId){
 
 //update user cart
 
+
 export function fetchUpdatedItem(updateData){
+    
     return new Promise(async (resolve)=>{
-        const response = await fetch(`https://dummyjson.com/carts/${updateData.productId}`, {
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/cart/updatecart`, {
             
                 method: 'PUT', /* or PATCH */
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId : updateData.productId,
-                  merge: true, // this will include existing products in the cart
-                  products: [
-                    updateData.updatedProduct
-                  ]
-                })
+                body: JSON.stringify(
+                    updateData
+                )
               
         })
         const data = await response.json()
@@ -49,11 +49,15 @@ export function fetchUpdatedItem(updateData){
 
 //remove item
 
-export function fetchRemovedItem(removeId){
-    console.log(removeId);
+export function fetchRemovedItem(removeData){
+
     return new Promise(async (resolve)=>{
-        const response = await fetch(`https://dummyjson.com/carts/${removeId}`, {
-            method : 'DELETE'
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/cart/remove`, {
+            method : 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(
+                    removeData
+                )
         })
         const data = await response.json()
         resolve({data})

@@ -1,22 +1,18 @@
-import React, { useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { logOutUserAsync, selectLogedInUser } from '../authSlice'
+import React from 'react'
 import { Navigate } from 'react-router-dom'
 
 const Logout = () => {
 
-    const logedInData = useSelector(selectLogedInUser)
-    const dispatch = useDispatch()
+     localStorage.removeItem('token');
+     localStorage.removeItem('loginData');
 
-    useEffect(()=>{
-       dispatch(logOutUserAsync({userId : logedInData.id}))
-    },[])
+    return (
+      <div>
+        <Navigate to={'/login'}/>
+      </div>
+    )
+   }
+  
 
-  return (
-    <div>
-      {!logedInData && <Navigate to={'/login'} replace={true}/>}
-    </div>
-  )
-}
 
 export default Logout

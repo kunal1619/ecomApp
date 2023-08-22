@@ -1,10 +1,13 @@
 import { Fragment } from 'react'
 import { Disclosure, Menu, Transition } from '@headlessui/react'
-import { Bars3Icon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, ShoppingCartIcon, UserCircleIcon } from '@heroicons/react/24/outline'
 import { Link } from 'react-router-dom'
 import { selectUserCartTotalItems } from '../cart/CartSlice'
 import { useSelector } from 'react-redux'
-import { selectCreatedUser } from '../auth/authSlice'
+import { selectCreatedUser, selectLogedInUser } from '../auth/authSlice'
+import { selectUserInfo } from '../user/userSlice'
+
+
 
 
 const user = {
@@ -29,20 +32,38 @@ function classNames(...classes) {
 export default function Navbar({children}) {
 
   const userCartData = useSelector(selectUserCartTotalItems)
-  const logedInUser = useSelector(selectCreatedUser);
+  const logedInUser = useSelector(selectLogedInUser);
+  const loginData = localStorage.getItem('loginData')
+  const userInfo = useSelector(selectUserInfo)
 
+  const totalItems = ()=>{
+    let totalCartItems = 0;
+     userCartData.forEach(element => {
+      if(!element.deleted){
+          totalCartItems += 1;
+      }
+    });
+    return totalCartItems;
+  }
   
+  
+  const cartTotalItems = totalItems();
+
+
 const navigation = []
 
-if(logedInUser && logedInUser.domain){
-  navigation.push({ name: 'Admin', link: '/admin', current: true }, { name: 'Orders', link: '/admin/userOrders', current: true });
-}else{
+
+if (loginData) {
+  const storedObject = JSON.parse(loginData);
+  if(storedObject && storedObject.role === 'admin'){
+    navigation.push({ name: 'Admin', link: '/admin', current: true }, { name: 'Orders', link: '/admin/userOrders', current: true });
+}else {
   navigation.push(
-    { name: 'Home', link: '/home', current: true },
+    { name: 'Home', link: '/', current: true },
     { name: 'About', link: '/admin', current: true },
   )
-  
 }
+} 
 
 
   return (
@@ -98,8 +119,7 @@ if(logedInUser && logedInUser.domain){
                       </button>
                       </Link>
                         
-                        {userCartData.length>0 && 
-                          <span className='h-5 w-5 p-[0.05rem] rounded-full bg-white text-red-500 text-sm relative -top-4 flex justify-center items-center'>{ userCartData.length}</span>}
+                          <span className='h-5 w-5 p-[0.05rem] rounded-full bg-white text-red-500 text-sm relative -top-4 flex justify-center items-center'>{ cartTotalItems}</span>
                       
 
                       {/* Profile dropdown */}
@@ -108,7 +128,11 @@ if(logedInUser && logedInUser.domain){
                           <Menu.Button className="relative flex max-w-xs items-center rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                             <span className="absolute -inset-1.5" />
                             <span className="sr-only">Open user menu</span>
-                            <img className="h-8 w-8 rounded-full" src={user.imageUrl} alt="" />
+                            {userInfo && userInfo.photo ? 
+                              <img className="h-8 w-8 rounded-full object-cover" src={userInfo.photo} alt="" /> : 
+                              <UserCircleIcon className="h-12 w-12 text-gray-300" aria-hidden="true" />}
+                            
+                            
                           </Menu.Button>
                         </div>
                         <Transition
@@ -180,7 +204,10 @@ if(logedInUser && logedInUser.domain){
                 <div className="border-t border-gray-700 pb-3 pt-4">
                   <div className="flex items-center px-5">
                     <div className="flex-shrink-0">
-                      <img className="h-10 w-10 rounded-full" src={user.imageUrl} alt="" />
+                    {userInfo && userInfo.photo ? 
+                              <img className="h-8 w-8 rounded-full" src={userInfo.photo} alt="" /> : 
+                              <UserCircleIcon className="h-12 w-12 text-gray-300" aria-hidden="true" />
+                              }
                     </div>
                     <div className="ml-3">
                       <div className="text-base font-medium leading-none text-white">{user.name}</div>
@@ -196,9 +223,8 @@ if(logedInUser && logedInUser.domain){
                         <ShoppingCartIcon className="h-6 w-6" aria-hidden="true" />
                     </button>
                     </Link>
-                      
-                      {userCartData.length > 0 && 
-                        <span className='h-5 w-5 p-[0.05rem] rounded-full bg-white text-red-500 text-sm relative -top-4 flex justify-center items-center'>{userCartData.length }</span>}
+
+                        <span className='h-5 w-5 p-[0.05rem] rounded-full bg-white text-red-500 text-sm relative -top-4 flex justify-center items-center'>{cartTotalItems}</span>
                    
                   </div>
                   <div className="mt-3 space-y-1 px-2">

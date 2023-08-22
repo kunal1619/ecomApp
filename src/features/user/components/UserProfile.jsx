@@ -1,20 +1,36 @@
 import React, { useState } from "react"
-import { selectUserInfo, updateUserInfoAsync } from "../userSlice"
+import { editUserAddressAsync, fetchUserAddressesAsync, fetchUserAllAddressesAsync, fetchUserInfoAsync, selectUserAddresses, selectUserInfo, updateUserInfoAsync } from "../userSlice"
 import { useDispatch, useSelector } from "react-redux"
 import { selectLogedInUser } from "../../auth/authSlice"
 import { Link } from "react-router-dom"
 import { PhotoIcon, UserCircleIcon } from '@heroicons/react/24/solid'
 import { useForm } from "react-hook-form";
+import { useEffect } from "react"
+
 
 
 
 const MyProfile = () => {
 
+  const loginData = localStorage.getItem('loginData')
+  const {id} = JSON.parse(loginData);
+
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
+  const form1 = useForm();
+  const form2 = useForm();
+  const form3 = useForm();
+
+  const [selectedAdd, setSelectdAdd] = useState(null)
+  const [addAddress, setShowAddAddress] = useState(false);
+  const [formData, setFormData] = useState({})
   
 
   const userAllInfo = useSelector(selectUserInfo)
-  const logedInData = useSelector(selectLogedInUser)
+
+  const userAddresses = useSelector(selectUserAddresses)
+
+
 
   // const {orders, name, email, about, state, country, photo, addresses} = userAllInfo;
 
@@ -22,6 +38,7 @@ const MyProfile = () => {
 
 
   const handleImageUpload = (event) => {
+    console.log('handleImageUpload calling');
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -34,6 +51,7 @@ const MyProfile = () => {
 
   const [editProfile, setEditProfile] = useState(false)
   const [showEditAddress, setShowEditAddress] = useState(false)
+  const [productId, setProductId] = useState('')
 
   const handleEditProfile = ()=>{
     setEditProfile(!editProfile)
@@ -41,49 +59,106 @@ const MyProfile = () => {
 
   const dispatch = useDispatch();
 
+  const [triggerEffect, setTriggerEffect] = useState(false);
 
-  const onSubmit = data =>{
+  const onSubmitForm1 = (data)=>{
 
-    if(data.hasOwnProperty('zip')){
-      dispatch(updateUserInfoAsync(
-        {...userAllInfo, userId : logedInData.id, userProfile : data }
-       )); 
-    }else if(data.hasOwnProperty('pin')){
-      dispatch(updateUserInfoAsync(
-        {...userAllInfo, userId : logedInData.id, addresses : [...userAllInfo.addAddress, {data}] }
-       ));
-    }else if(data.hasOwnProperty('pine')){
-      dispatch(updateUserInfoAsync(
-        {...userAllInfo, userId : logedInData.id, addresses : [...userAllInfo.addAddress, {data}] }
-       ));
-       handleDeleteAddress();
-    } else{
-      console.log('nothing called');
-    }
+    dispatch(updateUserInfoAsync({
+      userId : id,
+      ...data,
+      photo : imageUrl
+    }))
 
-      console.log(data);
+
       setEditProfile(false)
       setShowEditAddress(false)
       setShowAddAddress(false)
-  } 
+  }
+
+  useEffect(()=>{
+   dispatch(fetchUserInfoAsync(id))
+  },[])
+
+
+  const onSubmitForm2 = (data)=>{
+
+dispatch(editUserAddressAsync({
+  userId : id,
+  address : {
+    ...data, _id : productId
+  }
+}))
+
+      setEditProfile(false)
+      setShowEditAddress(false)
+      setShowAddAddress(false)
+  }
+
   
+  const onSubmitForm3 = (data)=>{
+
+    if(loginData){
+      const userdata = JSON.parse(loginData);
+      const id = userdata.id;
+
+      dispatch(fetchUserAddressesAsync(
+        {userId : id,
+        address : data}
+      ))
+
+    }
+
+      setEditProfile(false)
+      setShowEditAddress(false)
+      setShowAddAddress(false)
+
+      setTriggerEffect(true)
+  }
+
+  useEffect(()=>{
+  
+    if(loginData){
+      const userdata = JSON.parse(loginData);
+      const id = userdata.id;
+  
+      dispatch(fetchUserAllAddressesAsync(
+        {userId : id}
+      ))
+
+      setTriggerEffect(false)
+    }
+  },[triggerEffect])
+  
+
   const handleDeleteAddress = (ind)=>{
     setSelectdAdd(ind)
   }
 
-  const handleEditAddress = (ind)=>{
-    setShowEditAddress(!showEditAddress)
-    setSelectdAdd(ind)
+  const handleEditAddress = (id,ind)=>{
+      setSelectdAdd(ind)
+      setProductId(id)
+      setShowEditAddress(true)  
+}
+useEffect(() => {
+  if (selectedAdd !== null && userAddresses.length > 0) {
+    const selectedAddress = userAddresses[selectedAdd];
+    setFormData({
+      name: selectedAddress.name,
+      email: selectedAddress.email,
+      streetAddress: selectedAddress.address,
+      state: selectedAddress.country,
+      pin: selectedAddress.pin
+    });
   }
 
-  const [selectedAdd, setSelectdAdd] = useState(null)
-  const [addAddress, setShowAddAddress] = useState(false);
+  
+}, [selectedAdd, userAddresses]);
+
 
   const handleAddAddress = ()=>{
     setShowAddAddress(!addAddress)
   }
 
-  console.log(userAllInfo);
 
   return (
     <div>
@@ -101,14 +176,22 @@ const MyProfile = () => {
               </div>
               <div>
                 
-                <p className="font-bold text-gray-700 text-xl">{userAllInfo && userAllInfo.hasOwnProperty('addresses') ? userAllInfo.addresses.length : '0'}</p>
+                <p className="font-bold text-gray-700 text-xl">{userAddresses ? userAddresses.length : '0'}</p>
                 <p className="text-gray-400">Addresess</p>
               </div>
 
             </div>
             <div className="relative">
-              
-              <div className="w-48 h-48 bg-indigo-100 mx-auto rounded-full shadow-2xl absolute inset-x-0 top-0 -mt-24 flex items-center justify-center text-indigo-500">
+
+            {userAllInfo && userAllInfo.photo ? 
+            
+            <div className="w-48 h-48 bg-indigo-100 mx-auto rounded-full shadow-2xl absolute inset-x-0 top-0 -mt-24 flex items-center justify-center text-indigo-500">
+              <img src={userAllInfo.photo} alt="user profile" className="w-40 h-40 rounded-full object-cover"/>
+            </div>
+            
+            : 
+            
+            <div className="w-48 h-48 bg-indigo-100 mx-auto rounded-full shadow-2xl absolute inset-x-0 top-0 -mt-24 flex items-center justify-center text-indigo-500">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-24 w-24"
@@ -122,12 +205,14 @@ const MyProfile = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-              </div>
+              </div>}
+              
+
             </div>
             <div className="space-x-8 flex justify-between mt-32 md:mt-0 md:justify-center">
               <button className="text-white py-2 px-4 uppercase rounded bg-blue-400 hover:bg-blue-500 shadow hover:shadow-lg font-medium transition transform hover:-translate-y-0.5" onClick={handleEditProfile}>
                 
-                Edit Profile
+                {userAllInfo && userAllInfo.error === "User not found" ? "Create Profile" : "Edit Profile"}
               </button>
               <Link to={'/'}>
               <button className="text-white py-2 px-4 uppercase rounded bg-gray-700 hover:bg-gray-800 shadow hover:shadow-lg font-medium transition transform hover:-translate-y-0.5">
@@ -154,7 +239,7 @@ const MyProfile = () => {
 
 
 {editProfile && 
-  <form onSubmit={handleSubmit(onSubmit)}>
+  <form onSubmit={form1.handleSubmit(onSubmitForm1)}>
       <div className="space-y-12">
         <div className="border-b border-gray-900/10 pb-12">
           <h2 className="text-base font-semibold leading-7 text-gray-900">Profile</h2>
@@ -172,7 +257,7 @@ const MyProfile = () => {
                   rows={3}
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                   defaultValue={userAllInfo && userAllInfo.about ? userAllInfo.about : 'Short bio about you'}
-                  {...register("about")}
+                  {...form1.register("about")}
                  
                 />
               </div>
@@ -186,19 +271,12 @@ const MyProfile = () => {
               </label>
               <div className="mt-2 flex items-center gap-x-3">
 
-              <input type="file" accept=".jpg, .jpeg, .png" onChange={handleImageUpload} className="mb-4" {...register("photo")} value={userAllInfo && userAllInfo.photo ? userAllInfo.photo : ''}/>
+              <input type="file" accept=".jpg, .jpeg, .png" onChange={handleImageUpload} className="mb-4" value={userAllInfo && userAllInfo.photo ? userAllInfo.photo : ''}/>
     
               {imageUrl? 
                 <img src={imageUrl} alt="user photo" className="h-20 w-20 rounded-full object-cover shadow-md"/> : 
                 <UserCircleIcon className="h-12 w-12 text-gray-300" aria-hidden="true" />}
 
-               
-                <button
-                  type="button"
-                  className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                >
-                  Change
-                </button>
               </div>
             </div>
 
@@ -220,7 +298,7 @@ const MyProfile = () => {
                   id="full-name"
                   autoComplete="given-name"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  {...register("name")}
+                  {...form1.register("name")}
                   defaultValue={userAllInfo && userAllInfo.name ? userAllInfo.name : 'Your name'}
                 />
               </div>
@@ -239,8 +317,8 @@ const MyProfile = () => {
                   type="email"
                   autoComplete="email"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  {...register("email")}
-                  defaultValue={userAllInfo && userAllInfo.email ? userAllInfo.email : 'Your email'}
+                  {...form1.register("email")}
+                  defaultValue={userAllInfo && userAllInfo.email ? userAllInfo.email : 'abc@gmail.com'}
                 />
               </div>
             </div>
@@ -255,7 +333,7 @@ const MyProfile = () => {
                   name="country"
                   autoComplete="country-name"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
-                  {...register("state")}
+                  {...form1.register("country")}
                   defaultValue={userAllInfo && userAllInfo.country ? userAllInfo.country : 'Your country'}
                 >
                   <option>India</option>
@@ -276,7 +354,7 @@ const MyProfile = () => {
                   id="street-address"
                   autoComplete="street-address"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  {...register("streetAddress")}
+                  {...form1.register("streetAddress")}
                   defaultValue={userAllInfo && userAllInfo.streetAddress ? userAllInfo.streetAddress : 'Your adsress'}
                 />
               </div>
@@ -293,7 +371,7 @@ const MyProfile = () => {
                   id="city"
                   autoComplete="address-level2"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  {...register("city")}
+                  {...form1.register("city")}
                   defaultValue={userAllInfo && userAllInfo.city ? userAllInfo.city : 'Your city name'}
                 />
               </div>
@@ -310,8 +388,8 @@ const MyProfile = () => {
                   id="region"
                   autoComplete="address-level1"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  {...register("wonState")}
-                  defaultValue={userAllInfo && userAllInfo.wonState ? userAllInfo.wonState : 'Your state name'}
+                  {...form1.register("state")}
+                  defaultValue={userAllInfo && userAllInfo.wonState ? userAllInfo.state : 'Your state name'}
                 />
               </div>
             </div>
@@ -327,7 +405,7 @@ const MyProfile = () => {
                   id="postal-code"
                   autoComplete="postal-code"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  {...register("zip")}
+                  {...form1.register("zip")}
                   defaultValue={userAllInfo && userAllInfo.zip ? userAllInfo.zip : 'Your ZIP / Postal code'}
                 />
               </div>
@@ -363,11 +441,11 @@ const MyProfile = () => {
 <>
 <p className="text-xl font-medium">Address Details</p>
 <p className="text-gray-400">Add a new address or choose from existing address to place order</p>
-<form onSubmit={handleSubmit(onSubmit)}>
+<form onSubmit={form2.handleSubmit(onSubmitForm2)}>
       <label htmlFor="name" className="mt-4 mb-2 block text-sm font-medium">Full name</label>
       <div className="relative">
-        <input type="text" id="name" name="name" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="enter your full name" {...register("name", { required: true })}
-          defaultValue={userAllInfo.addresses.length > 0 ? userAllInfo.addresses[selectedAdd].name : ''}
+        <input type="text" id="name" name="name" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="enter your full name" {...form2.register("name", { required: true })}
+          defaultValue={userAddresses.length > 0 ? formData.name : ''}
         />
         <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3"
         >
@@ -380,8 +458,8 @@ const MyProfile = () => {
       
       <label htmlFor="email" className="mt-4 mb-2 block text-sm font-medium">Email</label>
       <div className="relative">
-        <input type="text" id="email" name="email" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="your.email@gmail.com"{...register("email", { required: true })} 
-          defaultValue={userAllInfo.addresses.length > 0 ? userAllInfo.addresses[selectedAdd].email : ''}
+        <input type="text" id="email" name="email" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="your.email@gmail.com"{...form2.register("email", { required: true })} 
+          defaultValue={userAddresses.length > 0 ? formData.email : ''}
         />
         <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -396,23 +474,23 @@ const MyProfile = () => {
       <div className="flex flex-col sm:flex-row space-x-2">
         <div className="relative flex-shrink-0 sm:w-7/12">
           <input type="text" id="billing-address" name="billing-address" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="Full address" 
-            {...register("streetAddress", { required: true })}
-            defaultValue={userAllInfo.addresses.length > 0 ? userAllInfo.addresses[selectedAdd].streetAddress : ''}/>
+            {...form2.register("streetAddress", { required: true })}
+            defaultValue={userAddresses.length > 0 ? formData.streetAddress : ''}/>
           <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3">
             <img className="h-4 w-4 object-contain" src="https://flagpack.xyz/_nuxt/4c829b6c0131de7162790d2f897a90fd.svg" alt="" />
           </div>
           {errors.streetaAddress && <span>This field is required</span>}
         </div>
-        <select type="text" name="billing-state" className="w-full rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" {...register("state", { required: true })}
-         defaultValue={userAllInfo.addresses.length > 0 ? userAllInfo.addresses[selectedAdd].state : ''}>
-          <option value="State">State</option>
-          <option value="State">India</option>
-          <option value="State">USA</option>
-          <option value="State">Srilanka</option>
+        <select type="text" name="billing-state" className="w-full rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" {...form1.register("state", { required: true })}
+         defaultValue={userAddresses.length > 0 ? formData.state : ''}>
+          <option value="">State</option>
+          <option value="India">India</option>
+          <option value="USA">USA</option>
+          <option value="Srilanka">Srilanka</option>
         </select>
         {errors.state && <span>This field is required</span>}
-        <input type="number" name="billing-zip" className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none sm:w-1/6 focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="Pin code" {...register("pine", { required: true })}
-           value={userAllInfo.addresses.length > 0 ? userAllInfo.addresses[selectedAdd].pine : ''}
+        <input type="number" name="billing-zip" className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none sm:w-1/6 focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="Pin code" {...form2.register("pin", { required: true })}
+           defaultValue={userAddresses.length > 0 ? formData.pin : ''}
         />
         {errors.pin && <span>This field is required</span>}
       </div>
@@ -436,10 +514,10 @@ const MyProfile = () => {
 
 <>
 <p className="text-xl font-medium">Add a new address</p>
-<form onSubmit={handleSubmit(onSubmit)}>
+<form onSubmit={form3.handleSubmit(onSubmitForm3)}>
       <label htmlFor="name" className="mt-4 mb-2 block text-sm font-medium">Full name</label>
       <div className="relative">
-        <input type="text" id="name" name="name" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="enter your full name" {...register("name", { required: true })}
+        <input type="text" id="name" name="name" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="enter your full name" {...form3.register("name", { required: true })}
           
         />
         <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3"
@@ -453,7 +531,7 @@ const MyProfile = () => {
       
       <label htmlFor="email" className="mt-4 mb-2 block text-sm font-medium">Email</label>
       <div className="relative">
-        <input type="text" id="email" name="email" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="your.email@gmail.com"{...register("email", { required: true })} 
+        <input type="text" id="email" name="email" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="your.email@gmail.com"{...form3.register("email", { required: true })} 
           
         />
         <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3">
@@ -469,22 +547,22 @@ const MyProfile = () => {
       <div className="flex flex-col sm:flex-row space-x-2">
         <div className="relative flex-shrink-0 sm:w-7/12">
           <input type="text" id="billing-address" name="billing-address" className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="Full address" 
-            {...register("streetAddress", { required: true })}
+            {...form3.register("streetAddress", { required: true })}
             />
           <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3">
             <img className="h-4 w-4 object-contain" src="https://flagpack.xyz/_nuxt/4c829b6c0131de7162790d2f897a90fd.svg" alt="" />
           </div>
           {errors.streetaAddress && <span>This field is required</span>}
         </div>
-        <select type="text" name="billing-state" className="w-full rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" {...register("state", { required: true })}
+        <select type="text" name="billing-state" className="w-full rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" {...form3.register("state", { required: true })}
          >
-          <option value="State">State</option>
-          <option value="State">India</option>
-          <option value="State">USA</option>
-          <option value="State">Srilanka</option>
+          <option value="">State</option>
+          <option value="India">India</option>
+          <option value="USA">USA</option>
+          <option value="Srilanka">Srilanka</option>
         </select>
         {errors.state && <span>This field is required</span>}
-        <input type="number" name="billing-zip" className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none sm:w-1/6 focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="Pin code" {...register("pin", { required: true })}
+        <input type="number" name="billing-zip" className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none sm:w-1/6 focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="Pin code" {...form3.register("pin", { required: true })}
         />
         {errors.pin && <span>This field is required</span>}
       </div>
@@ -510,25 +588,29 @@ const MyProfile = () => {
 {/* <!-- Dropdown menu --> */}
 <div  className=" bg-white divide-y divide-gray-100 rounded-lg  ">
     <ul className="p-3 space-y-1 text-sm text-gray-700" >
-{userAllInfo && userAllInfo.hasOwnProperty('addresses')  ? userAllInfo.addresses.map((elm, ind)=> (
-  <li>
-        <div className="flex justify-between  items-center p-2 rounded hover:bg-gray-100 ">
+{userAddresses && userAddresses.length > 0 ? userAddresses.map((elm, ind)=> (
+  
+  <li key={elm._id}>
+        <div className="flex justify-between  items-center p-2 rounded hover:bg-gray-100" >
         <div className="flex justify-between">
         <div className="flex items-center h-5">
               <input id="helper-radio-4" name="helper-radio" type="radio" value="" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 "/>
           </div>
           <div className="ml-2 text-sm">
               <label htmlFor="helper-radio-4" className="font-medium text-gray-900 ">
-                <div>{elm.state}</div>
-                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.state}</p>
-                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.pin || elm.pine}</p>
+                <div>{elm.name}</div>
+                <div className="flex space-x-2">
+                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.address}</p>
+                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.country}</p>
+                </div>
+                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.pin}</p>
               </label>
           </div>
         </div>
 
           <div className="flex items-center space-x-3">
 
-            <div className="h-6 w-6 cursor-pointer hover:scale-105 duration-150" onClick={()=>handleEditAddress(ind)}>
+            <div className="h-6 w-6 cursor-pointer hover:scale-105 duration-150" onClick={()=>handleEditAddress(elm._id, ind)}>
             <img src="./assets/edit.svg" alt="" />
             </div>
 
@@ -539,17 +621,19 @@ const MyProfile = () => {
 
           </div>
         </div>
+
        
       </li>
 
 )) : 
 <div>
   <p className="text-2xl text-gray-600 ">No address available</p>
-  <button className="bg-blue-600 py-1 px-3 rounded-md text-white shadow-sm hover:shadow-md hover:translate-y-1 duration-100" onClick={handleAddAddress}>Add address</button>
+  
 </div>}
     
      
     </ul>
+    <button className="bg-blue-600 py-1 px-3 rounded-md text-white shadow-sm hover:shadow-md hover:translate-y-1 duration-100" onClick={handleAddAddress}>Add address</button>
 </div>
 
           </div>
@@ -562,3 +646,7 @@ const MyProfile = () => {
 
 
 export default MyProfile
+
+
+// sahdev padhauria ambedkar mahavidyalaya
+// KA15/66115070052

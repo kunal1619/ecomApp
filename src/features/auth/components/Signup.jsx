@@ -5,7 +5,6 @@ import { selectCreatedUser } from "../authSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 
-
 export function Signup() {
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
 
@@ -14,16 +13,16 @@ export function Signup() {
 
   const onSubmit = data => {
     dispatch(signUpUserInfoAsync({
-      email:data.email, password:data.password, domain : data.role, address : []
+     name: data.name, email:data.email, password:data.password
     }))
-console.log(data);
   };
 
 console.log(user);
 
+
   return (
    <>
-   {user && <Navigate to={'/'} replace={true}></Navigate>}
+   {user && <Navigate to={'/login'} replace={true}></Navigate>}
           <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <img
@@ -38,6 +37,24 @@ console.log(user);
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <div>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">
+                 Full name
+                </label>
+
+              </div>
+              <div className="mt-2">
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  {...register("name", { required: true})}
+                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                />
+                {errors.name && <span className="text-red-600">Name is required</span>}
+              </div>
+            </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
                 Email address
@@ -96,26 +113,7 @@ console.log(user);
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">
-                 Role
-                </label>
 
-              </div>
-              <div className="mt-2">
-                <input
-                  id="role"
-                  name="role"
-                  type="text"
-                  autoComplete="current-password"
-                  defaultValue={'admin'}
-                  {...register("role", { required: true , validate : (value, formValues)=> value === formValues.role || 'password not matching'})}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-                {errors.role && <span className="text-red-600">Role is required</span>}
-              </div>
-            </div>
 
             <div>
             {/* <Link to={'/'}> */}

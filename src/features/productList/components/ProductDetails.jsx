@@ -5,7 +5,8 @@ import { useParams } from 'react-router-dom'
 import { useDispatch, useSelector } from "react-redux"
 import { fetchSelectedProductAsync, selectedProductById } from '../ProductSlice'
 import {  userCartItemAsync } from '../../cart/CartSlice'
-import { selectCreatedUser, selectLogedInUser } from '../../auth/authSlice'
+import { useNavigate } from 'react-router-dom'
+import { useAlert } from 'react-alert'
 
 const product = {
   name: 'Basic Tee 6-Pack',
@@ -50,15 +51,15 @@ function classNames(...classes) {
 }
 
 
+
 export default function ProductDetail() {
   const [selectedColor, setSelectedColor] = useState(product.colors[0])
   const [selectedSize, setSelectedSize] = useState(product.sizes[2])
   const param = useParams();
   const dispatch = useDispatch();
+  const alert = useAlert();
 
   const selectedData = useSelector(selectedProductById)
-  const loginUser = useSelector(selectLogedInUser)
-  const createdUser = useSelector(selectCreatedUser)
 
 
   useEffect(()=>{
@@ -66,13 +67,29 @@ export default function ProductDetail() {
 
  },[])
 
+
+
  //cart config
+
+
 const handleCart = (e)=>{
-  e.preventDefault();
+const loginData = localStorage.getItem('loginData')
+e.preventDefault();
+if(loginData){
+  const data = JSON.parse(loginData);
+  const id = data.id;
+  
   dispatch(userCartItemAsync({
-    userId : loginUser ? loginUser.id : createdUser.id,
-    products : [selectedData]
+    user_id : id,
+    product : selectedData,
+    quantity : 1
   }))
+  
+ }
+
+ alert.show('item added to cart successfully')
+
+  
 }
 
 
@@ -180,9 +197,9 @@ const handleCart = (e)=>{
                   ))}
                 </div>
                 <p className="sr-only">{reviews.average} out of 5 stars</p>
-                <a href={reviews.href} className="ml-3 text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                {/* <a href={reviews.href} className="ml-3 text-sm font-medium text-indigo-600 hover:text-indigo-500">
                   {reviews.totalCount} reviews
-                </a>
+                </a> */}
               </div>
             </div>
 
@@ -227,9 +244,9 @@ const handleCart = (e)=>{
               <div className="mt-10">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-gray-900">Size</h3>
-                  <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                  {/* <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
                     Size guide
-                  </a>
+                  </a> */}
                 </div>
 
                 <RadioGroup value={selectedSize} onChange={setSelectedSize} className="mt-4">

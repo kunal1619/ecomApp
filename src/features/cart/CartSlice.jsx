@@ -20,7 +20,6 @@ export const fetchUserCartTotalItemsAsync = createAsyncThunk(
   "cart/fetchUserCartTotalItems",
   async (userId) => {
     const response = await fetchUserCartTotalItems(userId)
-    console.log(response.data);
     return response.data
   },
 )
@@ -40,7 +39,6 @@ export const fetchRemovedItemAsync = createAsyncThunk(
   "cart/fetchRemovedItem",
   async (removeId) => {
     const response = await fetchRemovedItem(removeId)
-
     return response.data
   },
 )
@@ -89,7 +87,7 @@ export const counterSlice = createSlice({
       })
       .addCase(fetchUserUpdatedProductAsync.fulfilled, (state, action) => {
         state.status = "idle"
-        const index = state.item.findIndex((elm)=> elm.id === action.payload.id)
+        const index = state.item.findIndex((elm)=> elm._id === action.payload._id)
         state.item[index] = action.payload
 
         console.log(state.item, action.payload);
@@ -104,8 +102,9 @@ export const counterSlice = createSlice({
       })
       .addCase(fetchRemovedItemAsync.fulfilled, (state, action) => {
         state.status = "idle"
-        const index = state.item.findIndex((elm)=> elm.id === action.payload.id)
-         state.item.splice(1, index)
+        const index = state.item.findIndex((elm)=> elm._id === action.payload._id)
+        //  state.item.splice(1, index)
+        state.item[index] = action.payload
         
       })
       .addCase(fetchRemovedItemAsync.rejected, (state) => {

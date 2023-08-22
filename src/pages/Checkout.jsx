@@ -6,16 +6,21 @@ import { selectCreatedUser, selectLogedInUser } from '../features/auth/authSlice
 import { selectUserCartTotalItems } from '../features/cart/CartSlice';
 import { Link, Navigate } from 'react-router-dom';
 import { placeOrderAsync, selectCurentOrder } from '../features/order/orderSlice';
-import { selectUserInfo, updateUserInfoAsync } from '../features/user/userSlice';
+import { fetchUserAddressesAsync, fetchUserAllAddressesAsync, selectUserAddresses, selectUserInfo, updateUserInfoAsync } from '../features/user/userSlice';
+import { useEffect } from 'react';
 
 //order palace karney pe cart delete ho jana chahiye wo abhi banana hai mere ko
 
 const Checkout = () => {
 
+  const loginData = localStorage.getItem('loginData')
+
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm();
 
   const currentOrder = useSelector(selectCurentOrder)
   const userAllInfo = useSelector(selectUserInfo) //adress ko update userAllinfo se ho karna hia
+  const userAddresses = useSelector(selectUserAddresses)
+  const [triggerEffect, setTriggerEffect] = useState(false);
 
   //update address
   const dispatch = useDispatch();
@@ -25,10 +30,35 @@ const Checkout = () => {
   const [adress, setAdress] = useState([])
 
   const onSubmit = (data) => {
-      setAdress([...adress, data])
-      dispatch(updateUserInfoAsync({...logedInuser, address : [{data}]}))
-      // reset();
+    if(loginData){
+      const userdata = JSON.parse(loginData);
+      const id = userdata.id;
+
+      dispatch(fetchUserAddressesAsync(
+        {userId : id,
+        address : data}
+      ))
+
+
+    }
+      setTriggerEffect(true)
   }
+
+
+  useEffect(()=>{
+  
+    if(loginData){
+      const userdata = JSON.parse(loginData);
+      const id = userdata.id;
+  
+      dispatch(fetchUserAllAddressesAsync(
+        {userId : id}
+      ))
+
+      setTriggerEffect(false)
+
+    }
+  },[triggerEffect])
 
   //choose address
   const [chooseAdd, setChooseAdd] = useState(null)
@@ -37,16 +67,33 @@ const Checkout = () => {
  //cart items
  const selectedCartItems = useSelector(selectUserCartTotalItems)
 
+ const totalItems = ()=>{
+  let totalCartItems = 0;
+   selectedCartItems.forEach(element => {
+    if(!element.deleted){
+        totalCartItems += 1;
+    }
+  });
+  return totalCartItems;
+}
+const cartTotalItems = totalItems();
+
  const calculateSubTotalPrice = ()=>{
   let totalPrice = 0;
-  if(selectedCartItems.length>0){
+  let totalArray = []
      selectedCartItems.forEach(element => {
-      totalPrice += element.total * element.totalQuantity
+      if(!element.deleted){
+        totalPrice += element.product.price * element.quantity
+        totalArray.push(element.product.price * element.quantity)
+      }
+     
     });
-  }
+    console.log(totalArray);
   
   return totalPrice;
 }
+
+const totalCartPrice = calculateSubTotalPrice();
 
 //pay method
 
@@ -69,7 +116,7 @@ const handleOrder = ()=>{
     address : adress.chooseAdd,
     selectedCartItems,
     paymentMethod : payMethod,
-    totalPrice : calculateSubTotalPrice(),
+    totalPrice : totalCartPrice,
     status : "pending"
   }))
 }
@@ -87,16 +134,21 @@ const handleOrder = ()=>{
     <p className="text-xl font-medium">Order Summary</p>
     <p className="text-gray-400">Check your items. And select a suitable shipping method.</p>
     <div className="mt-8 space-y-3 rounded-lg border bg-white px-2 py-4 sm:px-6">
-    {selectedCartItems.length>0 ? selectedCartItems.map((item, ind)=>(
+    {cartTotalItems > 0 ? selectedCartItems.map((item, ind)=>(
+    
+    !item.deleted &&
+           
       <div className="flex flex-col rounded-lg bg-white sm:flex-row" key={ind}>
-        <img className="m-2 h-24 w-28 rounded-md border object-cover object-center" src="https://images.unsplash.com/flagged/photo-1556637640-2c80d3201be8?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8c25lYWtlcnxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60" alt="" />
+        <img className="m-2 h-24 w-28 rounded-md border object-cover object-center" src={item.product.images[0]} alt="" />
         <div className="flex w-full flex-col px-4 py-4">
-          <span className="font-semibold">{item.products[0].title}</span>
+          <span className="font-semibold">{item.product.title}</span>
           <span className="float-right text-gray-400">Quantity</span>
-          <span className="float-right text-gray-400">{item.products[0].quantity}</span>
-          <p className="text-lg font-bold">${item.products[0].price}</p>
+          <span className="float-right text-gray-400">{item.quantity}</span>
+          <p className="text-lg font-bold">${item.product.price * item.quantity}</p>
         </div>
       </div>
+
+     
     )) : 
     <div className='h-20 w-full flex items-center justify-center'>
       <p className='text-xl text-gray-700'>No Item in cart</p>
@@ -174,10 +226,10 @@ const handleOrder = ()=>{
           {errors.streetaAddress && <span>This field is required</span>}
         </div>
         <select type="text" name="billing-state" className="w-full rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-500 focus:ring-blue-500" {...register("state", { required: true })}>
-          <option value="State">State</option>
-          <option value="State">India</option>
-          <option value="State">USA</option>
-          <option value="State">Srilanka</option>
+          <option value="">State</option>
+          <option value="India">India</option>
+          <option value="USA">USA</option>
+          <option value="Srilanka">Srilanka</option>
         </select>
         {errors.state && <span>This field is required</span>}
         <input type="number" name="billing-zip" className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-3 text-sm shadow-sm outline-none sm:w-1/6 focus:z-10 focus:border-blue-500 focus:ring-blue-500" placeholder="Pin code" {...register("pin", { required: true })}/>
@@ -199,24 +251,41 @@ const handleOrder = ()=>{
 {/* <!-- Dropdown menu --> */}
 <div  className=" bg-white divide-y divide-gray-100 rounded-lg  ">
     <ul className="p-3 space-y-1 text-sm text-gray-700" >
-    {adress.map((item, ind)=>(
-   
-      <li key={ind} onClick={()=>setChooseAdd(ind)}>
-        <div className="flex p-2 rounded hover:bg-gray-100 ">
-          <div className="flex items-center h-5">
+{userAddresses && userAddresses.length > 0 && userAddresses !== "User not found" ? userAddresses.map((elm, ind)=> (
+  
+  <li key={elm._id}>
+        <div className="flex justify-between  items-center p-2 rounded hover:bg-gray-100" >
+        <div className="flex justify-between">
+        <div className="flex items-center h-5">
               <input id="helper-radio-4" name="helper-radio" type="radio" value="" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 "/>
           </div>
           <div className="ml-2 text-sm">
               <label htmlFor="helper-radio-4" className="font-medium text-gray-900 ">
-                <div>{item.state}</div>
-                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{item.streetAddress}</p>
-                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{item.pin}</p>
+                <div>{elm.name}</div>
+                <div className="flex space-x-2">
+                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.address}</p>
+                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.country}</p>
+                </div>
+                <p id="helper-radio-text-4" className="text-xs font-normal text-gray-500">{elm.pin}</p>
               </label>
           </div>
         </div>
+
+          <div className="flex items-center space-x-3">
+
+
+          </div>
+        </div>
+
+       
       </li>
 
-    ))}
+)) : 
+<div>
+  <p className="text-2xl text-gray-600 ">No address available</p>
+  
+</div>}
+    
      
     </ul>
 </div>
@@ -231,7 +300,7 @@ const handleOrder = ()=>{
       <div className="mt-6 border-t border-b py-2">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-gray-900">Subtotal</p>
-          <p className="font-semibold text-gray-900">${calculateSubTotalPrice()}</p>
+          <p className="font-semibold text-gray-900">${totalCartPrice}</p>
         </div>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-gray-900">Shipping</p>
@@ -240,7 +309,7 @@ const handleOrder = ()=>{
       </div>
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm font-medium text-gray-900">Total</p>
-        <p className="text-2xl font-semibold text-gray-900">${+calculateSubTotalPrice() + 8}</p>
+        <p className="text-2xl font-semibold text-gray-900">${totalCartPrice + 8}</p>
       </div>
     </div>
     <Link to={'/myOrders'}>

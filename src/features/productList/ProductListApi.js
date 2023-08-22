@@ -1,17 +1,25 @@
 export function fetchProductItem(){
     return new Promise(async (resolve)=>{
-        const response = await fetch('https://dummyjson.com/products')
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/all-products`)
         const data = await response.json()
         resolve({data})
     })
 }
 
-let obj = {}
 
 export function fetchProductByFilter(filter){
-  const len = filter.category.length;
+
+    const categories = filter.category;
+    const sorting = filter.sortby
+     
+    const queryParams = new URLSearchParams({
+        sorting : sorting,
+        categories : categories
+    })
+
+ 
     return new Promise(async (resolve)=>{
-        const response = await fetch(`https://dummyjson.com/products/category/${filter.category[len-1]}`)
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/products/${queryParams}`)
         const data = await response.json()
         resolve({data})
     })
@@ -20,7 +28,7 @@ export function fetchProductByFilter(filter){
 export function fetchShortedProduct(sortBy){
 
     return new Promise(async (resolve)=>{
-        const response = await fetch(`https://dummyjson.com/products?sort=${sortBy}`)
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/sortProducts/${sortBy}`)
         const data = await response.json()
         resolve({data})
     })
@@ -41,8 +49,9 @@ export function fetchPaginationData(pageData){
 
 export function fetchSelectedProduct(id){
 
+
     return new Promise(async (resolve)=>{
-        const response = await fetch(`https://dummyjson.com/products/${id}`)
+        const response = await fetch(`${import.meta.env.VITE_DEV_LINK}/selectedProduct/${id}`)
         const data = await response.json()
         resolve({data})
     })

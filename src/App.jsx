@@ -171,16 +171,20 @@ const router = createBrowserRouter([
 
 const App = () => {
 
-  const dispatch = useDispatch();
-  const logedInUserData = useSelector(selectLogedInUser)
+//fetch all items from cart
+const dispatch = useDispatch();
+const loginData =  localStorage.getItem('loginData');
+const data = JSON.parse(loginData)
 
-    useEffect(()=>{
-      if (logedInUserData) {
-        dispatch(fetchUserCartTotalItemsAsync(logedInUserData.id))
-      }
-    
-    },[dispatch])
-  
+if(loginData){
+  const id = data.id;
+  useEffect(()=>{
+    dispatch(fetchUserCartTotalItemsAsync(
+      {userId : id}
+    ))
+  },[])
+
+}
 
   return (
     <div>

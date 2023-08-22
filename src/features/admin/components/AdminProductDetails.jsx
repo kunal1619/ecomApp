@@ -75,7 +75,7 @@ const handleCart = (e)=>{
   }))
 }
 
-
+console.log(selectedData);
 
 
   return (
